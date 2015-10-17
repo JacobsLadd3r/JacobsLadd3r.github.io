@@ -106,5 +106,39 @@ esac
 #parse $MIN $RESULTS $START $END
 #fi  
 </pre>
+
+<h2>inode_notify | Low inodes free alerting and reporting</h2>
+<h3>Check inodes free and send email alert, or view report of inode usage</h3>
+<pre>
+#!/bin/bash
+# inode_notify.sh
+# Check inodes free and send email alert, or provide report of inode usage
+# 16/Oct/2015 Jacob.Nicholson@rackspace.com
+
+function EMAIL_ALERT {
+ ALERT_EMAIL=$1
+ INODES_PERCENT=50
+ INODES_FREE=$(df -i | awk '{print $1,$2,$3,$4}' | head -3 | tail -1 | awk "{FREE=\$4; if (FREE <= $INODES_PERCENT) print 1}")
+
+ if [[ $INODES_FREE = 1 ]]
+ then
+  ALERT="Your inode usage on $(hostname) is under $INODES_PERCENT% free, run [/home/rack/151016-03470/inode_notify.sh report] for full report"
+  echo $ALERT |  mail -s"Rackspace inode alert $(hostname)" $ALERT_EMAIL
+  echo $ALERT
+ else
+  echo "Current inode usage is over $INODES_PERCENT% free, no need to do anything"
+ fi
+}
+
+function REPORT {
+ find / -xdev -printf '%h\n' | sort | uniq -c | sort -n > /home/rack/151016-03470/INODES
+ echo "inode report available at [/home/rack/151016-03470/INODES]"
+}
+
+case "$1" in
+ report ) REPORT ;;
+      * ) EMAIL_ALERT Jacob.Nicholson@rackspace.com ;;
+esac
+</pre>
 </body>
 </html>
