@@ -122,8 +122,8 @@ function EMAIL_ALERT {
 
  if [[ $INODES_FREE = 1 ]]
  then
-  ALERT="Your inode usage on $(hostname) is under $INODES_PERCENT% free, run [/home/rack/151016-03470/inode_notify.sh report] for full report"
-  echo $ALERT |  mail -s"Rackspace inode alert $(hostname)" $ALERT_EMAIL
+  ALERT="Your inode usage on $(hostname) is under $INODES_PERCENT% free, run [/home/rack/inode_notify.sh report] for full report"
+  echo $ALERT | mail -s"Rackspace inode alert $(hostname)" $ALERT_EMAIL
   echo $ALERT
  else
   echo "Current inode usage is over $INODES_PERCENT% free, no need to do anything"
@@ -131,8 +131,8 @@ function EMAIL_ALERT {
 }
 
 function REPORT {
- find / -xdev -printf '%h\n' | sort | uniq -c | sort -n > /home/rack/151016-03470/INODES
- echo "inode report available at [/home/rack/151016-03470/INODES]"
+ find / -xdev -printf '%h\n' | sort | uniq -c | sort -n > /home/rack/INODES
+ echo "inode report available at [/home/rack/INODES]"
 }
 
 case "$1" in
