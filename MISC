@@ -1,0 +1,27 @@
+for MySQL_Table in $(awk '/crashed/ {ERR[$6]++}END{for (i in ERR) print ERR[i],i}' /var/log/mysqld.log | sed -e "s#'./##" -e "s#'##" | sort -n | awk '{print $2}'); do echo $MySQL_Table; myisamchk --silent --fast /var/lib/mysql/$(echo $MySQL_Table | awk -F / '{print $1}')/$(echo $MySQL_Table | awk -F / '{print $2}').MYI; done
+
+MyISAM-table '/var/lib/mysql/db_name/phpbb_posts.MYI' is corrupted
+MyISAM-table '/var/lib/mysql/db_name/phpbb_search_wordmatch.MYI' is corrupted
+MyISAM-table '/var/lib/mysql/db_name/phpbb_topics.MYI' is corrupted
+
+#--- Copy MyISAM data to new tmp location
+
+rsync -avP /var/lib/mysql/db_name/phpbb_posts* /home/rack/160105-13568/
+rsync -avP /var/lib/mysql/db_name/phpbb_search_wordmatch* /home/rack/160105-13568/
+rsync -avP /var/lib/mysql/db_name/phpbb_topics* /home/rack/160105-13568/
+
+#--- Run myisamcheck on each one and swap repaired tables for corrupt ones
+
+mkdir /home/rack/160105-13568/tmp
+chown mysql.mysql /home/rack/160105-13568/tmp
+myisamchk --sort-buffer-size=512M --tmpdir=/home/rack/160105-13568/tmp -r /home/rack/160105-13568/phpbb_posts.MYI
+
+for i in phpbb_posts phpbb_topics phpbb_search_wordmatch; do mv /var/lib/mysql/db_name/$i.* /home/rack/160105-13568/corrupt/; done
+
+for i in phpbb_posts phpbb_topics phpbb_search_wordmatch; do mv /home/rack/160105-13568/$i.* /var/lib/mysql/db_name/; done
+
+[root@319476-web1 ~]# mysql -e "SELECT table_name,Engine,table_rows,Avg_row_length,sum((Data_length+Index_length)/1024/1024) as MB,Data_free,Create_time FROM information_schema.tables WHERE table_schema = 'db_name' group by 1;" | egrep "_config|_confirm|_posts|_search_|_sessions|_topics"
+
+phpbb_posts MyISAM  260088  26213 6518.30966568 0 2013-06-12 21:03:27
+phpbb_search_wordmatch  MyISAM  70997431  8 2693.39495087 0 2013-06-12 21:03:52
+phpbb_topics  MyISAM  242215  162 55.08135986 0 2013-06-12 21:04:20
